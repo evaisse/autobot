@@ -1,4 +1,3 @@
-
 import { DebugEvent } from '../types';
 
 interface DebugPanelProps {

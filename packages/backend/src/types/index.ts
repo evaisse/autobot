@@ -91,7 +91,7 @@ export interface CardComponent extends UIComponent {
 export interface ListComponent extends UIComponent {
   type: 'list';
   props: {
-    items: Array<{ label: string; value: string; icon?: string }>;
+    items: Array<{ label: string; value?: string; icon?: string }>;
     ordered?: boolean;
   };
 }
@@ -100,7 +100,7 @@ export interface ChartComponent extends UIComponent {
   type: 'chart';
   props: {
     title: string;
-    chartType: 'bar' | 'line' | 'pie';
+    chartType: 'bar'; // Currently only bar charts are implemented
     data: Array<{ label: string; value: number }>;
   };
 }

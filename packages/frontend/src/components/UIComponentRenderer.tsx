@@ -102,20 +102,26 @@ export function UIComponentRenderer({ component }: UIComponentRendererProps) {
       return (
         <div style={styles.form}>
           <h4 style={styles.formTitle}>{props.title}</h4>
-          {props.fields.map((field: any, idx: number) => (
-            <div key={idx} style={styles.formField}>
-              <label style={styles.formLabel}>
-                {field.label}
-                {field.required && <span style={styles.formRequired}>*</span>}
-              </label>
-              <input
-                type={field.type || 'text'}
-                name={field.name}
-                style={styles.formInput}
-                placeholder={field.placeholder}
-              />
-            </div>
-          ))}
+          {props.fields.map((field: any, idx: number) => {
+            // Validate field type against safe allowlist
+            const safeTypes = ['text', 'email', 'password', 'number', 'tel', 'url', 'date', 'time'];
+            const fieldType = safeTypes.includes(field.type) ? field.type : 'text';
+            
+            return (
+              <div key={idx} style={styles.formField}>
+                <label style={styles.formLabel}>
+                  {field.label}
+                  {field.required && <span style={styles.formRequired}>*</span>}
+                </label>
+                <input
+                  type={fieldType}
+                  name={field.name}
+                  style={styles.formInput}
+                  placeholder={field.placeholder}
+                />
+              </div>
+            );
+          })}
           <button style={styles.formSubmit}>
             {props.submitLabel || 'Submit'}
           </button>

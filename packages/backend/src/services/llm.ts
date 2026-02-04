@@ -117,8 +117,8 @@ export class LLMService {
                 data: { toolCall: toolCall.function.name, component },
                 description: `LLM rendered ${args.type} component via A2UI`,
               });
-            } catch (error) {
-              console.error('Error parsing tool call:', error);
+            } catch (error: any) {
+              console.error('Error parsing tool call:', error, 'Arguments:', toolCall.function.arguments);
             }
           }
         }
@@ -135,7 +135,7 @@ export class LLMService {
           model: completion.model,
           toolCalls: choice.message.tool_calls?.length || 0,
         },
-        description: `LLM responded (${completion.usage?.total_tokens || 0} tokens, ${choice.message.tool_calls?.length || 0} UI components)`,
+        description: `LLM responded (${completion.usage?.total_tokens || 0} tokens, ${uiComponents.length} UI components)`,
       });
 
       const responseMessage: Message = {

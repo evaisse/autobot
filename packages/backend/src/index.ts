@@ -124,7 +124,7 @@ You can enhance your responses by rendering visual components such as:
 - Buttons: Interactive actions
 - Cards: Rich content with images and actions
 - Lists: Organized information
-- Charts: Data visualizations (bar, line, pie)
+- Charts: Data visualizations (bar charts only)
 - Forms: User input collection
 - Tables: Structured data display
 - Progress bars: Task completion status
@@ -136,7 +136,7 @@ When appropriate, use the render_ui_component function to create these component
 - Display information as cards
 - Create interactive forms for user input
 
-Always provide both textual context AND visual components when it enhances understanding.`,
+Always provide both textual context and visual components when it enhances understanding.`,
         timestamp: Date.now(),
       });
     }

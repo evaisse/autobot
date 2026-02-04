@@ -9,6 +9,7 @@ AG-UI (Agent-UI) is a communication protocol designed to standardize how AI agen
 3. Visualize the decision-making process
 4. Handle tools and function calls
 5. Manage conversations and context
+6. **Enable dynamic UI creation via A2UI (Agent-to-UI)**
 
 ## Core Concepts
 
@@ -22,6 +23,7 @@ interface Message {
   role: 'user' | 'assistant' | 'system';  // Who sent the message
   content: string;         // The actual message content
   timestamp: number;       // When it was created
+  uiComponents?: UIComponent[];  // Optional A2UI components
 }
 ```
 
@@ -29,6 +31,8 @@ interface Message {
 - `user`: Messages from the human user
 - `assistant`: Messages from the AI agent
 - `system`: System-level instructions or context
+
+**UI Components:** Messages can optionally include interactive UI components created by the agent using the A2UI protocol.
 
 ### 2. Debug Events
 
@@ -232,8 +236,123 @@ The AG-UI protocol can be extended to support:
 - **Conversation branching**: Exploring different conversation paths
 - **Reasoning traces**: Detailed step-by-step reasoning
 
+## A2UI (Agent-to-UI) Protocol
+
+### Overview
+
+A2UI is an extension of AG-UI that enables AI agents to create dynamic, interactive UI components directly within chat conversations. Instead of just text responses, agents can render:
+
+- Buttons for user actions
+- Charts for data visualization
+- Cards for rich content display
+- Forms for input collection
+- Tables for structured data
+- Progress bars for status indication
+- Alerts for notifications
+- Lists for organized information
+
+### Component Types
+
+```typescript
+export type UIComponentType = 
+  | 'button'
+  | 'card'
+  | 'list'
+  | 'form'
+  | 'chart'
+  | 'image'
+  | 'table'
+  | 'progress'
+  | 'alert'
+  | 'input';
+
+export interface UIComponent {
+  id: string;
+  type: UIComponentType;
+  props: Record<string, any>;
+  children?: UIComponent[];
+}
+```
+
+### How A2UI Works
+
+1. **Function Definition**: Backend registers `render_ui_component` as an available function
+2. **LLM Decision**: When appropriate, LLM calls this function with component specs
+3. **Component Creation**: Backend creates UIComponent object and adds to message
+4. **Debug Event**: A `tool_call` event is created for transparency
+5. **Frontend Rendering**: UIComponentRenderer dynamically renders the component
+
+### Example: Button Component
+
+**LLM Function Call:**
+```json
+{
+  "name": "render_ui_component",
+  "arguments": {
+    "type": "button",
+    "props": {
+      "label": "Primary Action",
+      "variant": "primary",
+      "action": "perform_action"
+    }
+  }
+}
+```
+
+**Resulting UI Component:**
+```typescript
+{
+  id: "uuid",
+  type: "button",
+  props: {
+    label: "Primary Action",
+    variant: "primary",
+    action: "perform_action"
+  }
+}
+```
+
+### Example: Chart Component
+
+**LLM Function Call:**
+```json
+{
+  "name": "render_ui_component",
+  "arguments": {
+    "type": "chart",
+    "props": {
+      "title": "Q4 Sales by Region",
+      "chartType": "bar",
+      "data": [
+        { "label": "North America", "value": 425000 },
+        { "label": "Europe", "value": 325000 },
+        { "label": "Asia Pacific", "value": 500000 },
+        { "label": "Latin America", "value": 200000 }
+      ]
+    }
+  }
+}
+```
+
+### Benefits of A2UI
+
+1. **Enhanced UX**: Visual components are easier to understand than text
+2. **Interactivity**: Users can click buttons, fill forms, etc.
+3. **Data Visualization**: Charts make data trends obvious
+4. **Structured Information**: Tables and cards organize content
+5. **Transparency**: Debug panel shows when and how components are created
+
+### Implementation Notes
+
+- Components are created via OpenAI function calling
+- Each component generation creates a debug event
+- Components are rendered client-side for flexibility
+- All component types are type-safe with TypeScript
+- Component props are validated at runtime
+
 ## References
 
 - [OpenAI Chat Completions API](https://platform.openai.com/docs/api-reference/chat)
+- [OpenAI Function Calling](https://platform.openai.com/docs/guides/function-calling)
 - [WebSocket Protocol](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)

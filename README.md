@@ -1,6 +1,6 @@
 # 🤖 Autobot - LLM AG-UI Demo Application
 
-A pedagogical fullstack TypeScript demonstration application showcasing how LLM chatbot frontends interact with their backends using the AG-UI (Agent-UI) protocol.
+A pedagogical fullstack TypeScript demonstration application showcasing how LLM chatbot frontends interact with their backends using the AG-UI (Agent-UI) protocol with **A2UI support** for dynamic UI component rendering.
 
 ## 📚 Overview
 
@@ -8,6 +8,7 @@ Autobot is designed to **teach and demonstrate** the technical architecture of m
 
 - **Real-time visualization** of all exchanges between frontend ↔ backend ↔ LLM
 - **AG-UI protocol** implementation for structured agent communication
+- **A2UI (Agent-to-UI)** support - LLMs can create interactive UI components (buttons, charts, cards, forms, etc.)
 - **Two-panel interface**: Technical debug view + User chat view
 - **Ultra-simple embedded storage** using JSON files
 - **Full TypeScript** codebase for type safety and clarity
@@ -20,7 +21,9 @@ This project helps developers understand:
 2. **Backend orchestration** - Observe message routing and state management
 3. **Real-time communication** - Learn WebSocket patterns for live updates
 4. **AG-UI protocol** - Understand structured agent-to-UI communication
-5. **Fullstack architecture** - See how all pieces fit together
+5. **A2UI protocol** - Learn how LLMs can create dynamic UI components
+6. **Function calling** - See how LLMs use tools to enhance responses
+7. **Fullstack architecture** - See how all pieces fit together
 
 ## 🏗️ Architecture
 
@@ -127,22 +130,44 @@ When a user sends a message:
 1. **Frontend** creates a "user message received" debug event
 2. **Backend** receives the message via HTTP POST
 3. **Backend** loads conversation history from storage
-4. **Backend** calls the OpenAI API with the full context
-5. **LLM** processes the request and returns a response
-6. **Backend** saves the updated conversation to storage
-7. **Backend** broadcasts debug events via WebSocket
-8. **Frontend** displays both the response and debug events
+4. **Backend** calls the OpenAI API with function calling enabled (A2UI tools)
+5. **LLM** processes the request and may call UI component creation functions
+6. **Backend** parses tool calls and creates UI components
+7. **Backend** saves the updated conversation to storage
+8. **Backend** broadcasts debug events via WebSocket
+9. **Frontend** displays the response with any UI components
 
-### 3. Debug Visualization
+### 3. A2UI Component Rendering
+
+When the LLM decides to create a UI component:
+
+1. **LLM** calls the `render_ui_component` function with type and props
+2. **Backend** creates a `tool_call` debug event
+3. **Component** is added to the message's `uiComponents` array
+4. **Frontend** UIComponentRenderer dynamically renders the component
+5. **Debug panel** shows the component creation in real-time
+
+**Supported Components:**
+- 🔘 **Buttons** - Interactive actions with variants
+- 🎴 **Cards** - Rich content with images and actions
+- 📊 **Charts** - Data visualizations (bar, line, pie)
+- 📝 **Lists** - Organized items with icons
+- 📋 **Forms** - Input collection fields
+- 📑 **Tables** - Structured data display
+- 📈 **Progress** - Task completion indicators
+- ⚠️ **Alerts** - Notifications with severity levels
+
+### 4. Debug Visualization
 
 The debug panel shows every step in real-time:
 - 🖥️ Frontend events (user actions)
 - ⚙️ Backend events (processing)
 - 🤖 LLM events (API calls and responses)
+- 🎨 Tool calls (UI component creation)
 
 Each event includes:
 - Timestamp
-- Event type (request, response, error, etc.)
+- Event type (request, response, tool_call, error, etc.)
 - Source component
 - Detailed data payload
 - Human-readable description
@@ -218,6 +243,38 @@ For production use, you would replace this with a proper database.
 - The debug panel helps you verify what data is being sent
 - For production, use environment variables and secure storage
 
+## 🎨 A2UI Component Examples
+
+The application includes demonstration pages showcasing different UI components:
+
+### Button Components
+Ask: "Show me some button options"
+
+The LLM creates interactive buttons with different variants:
+- Primary actions (blue)
+- Secondary actions (gray)
+- Danger actions (red)
+
+### Chart Visualizations
+Ask: "Show me sales data for this quarter"
+
+The LLM visualizes data as bar charts with:
+- Multiple data series
+- Animated bars
+- Value labels
+- Professional styling
+
+### Card Components
+Ask: "Show me information about the new feature"
+
+The LLM creates rich content cards with:
+- Header images or icons
+- Titles and descriptions
+- Action buttons
+- Clean, modern design
+
+**View live demos:** Visit `/demos/demo-button.html`, `/demos/demo-chart.html`, or `/demos/demo-card.html` after starting the dev server.
+
 ## 🤝 Contributing
 
 This is a pedagogical project! Contributions that improve:
@@ -244,8 +301,9 @@ To dive deeper into the codebase:
 
 1. Start with `/packages/backend/src/index.ts` - Main server logic
 2. Read `/packages/frontend/src/App.tsx` - Frontend orchestration
-3. Explore `/packages/backend/src/services/llm.ts` - LLM integration
-4. Check `/packages/frontend/src/components/DebugPanel.tsx` - Event visualization
+3. Explore `/packages/backend/src/services/llm.ts` - LLM integration with A2UI
+4. Check `/packages/frontend/src/components/UIComponentRenderer.tsx` - Dynamic UI rendering
+5. Review `/packages/frontend/src/components/DebugPanel.tsx` - Event visualization
 
 Every file is thoroughly commented to aid understanding!
 

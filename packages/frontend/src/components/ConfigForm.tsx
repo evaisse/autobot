@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Config } from '../types';
 
 interface ConfigFormProps {

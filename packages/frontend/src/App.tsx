@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ConfigForm } from './components/ConfigForm';
 import { DebugPanel } from './components/DebugPanel';
 import { ChatPanel } from './components/ChatPanel';

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Message } from '../types';
+import { UIComponentRenderer } from './UIComponentRenderer';
 
 interface ChatPanelProps {
   messages: Message[];
@@ -73,6 +74,16 @@ export function ChatPanel({ messages, onSendMessage, loading }: ChatPanelProps) 
                   {message.role === 'user' ? '👤 You' : '🤖 Assistant'}
                 </div>
                 <div style={styles.messageText}>{message.content}</div>
+                
+                {/* Render A2UI components if present */}
+                {message.uiComponents && message.uiComponents.length > 0 && (
+                  <div style={styles.uiComponentsContainer}>
+                    {message.uiComponents.map((component) => (
+                      <UIComponentRenderer key={component.id} component={component} />
+                    ))}
+                  </div>
+                )}
+                
                 <div style={styles.messageTime}>
                   {new Date(message.timestamp).toLocaleTimeString()}
                 </div>
@@ -200,6 +211,12 @@ const styles = {
     fontSize: '11px',
     marginTop: '6px',
     opacity: 0.6,
+  },
+  uiComponentsContainer: {
+    marginTop: '12px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '8px',
   },
   loadingDots: {
     display: 'flex',

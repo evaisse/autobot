@@ -54,15 +54,75 @@ export class LLMService {
     });
 
     try {
-      // Call OpenAI API
+      // Define A2UI tools for the LLM
+      const tools = [
+        {
+          type: 'function' as const,
+          function: {
+            name: 'render_ui_component',
+            description: 'Render an interactive UI component (button, card, chart, list, form, table, progress bar, or alert) in the chat interface',
+            parameters: {
+              type: 'object',
+              properties: {
+                type: {
+                  type: 'string',
+                  enum: ['button', 'card', 'list', 'chart', 'form', 'table', 'progress', 'alert'],
+                  description: 'The type of UI component to render',
+                },
+                props: {
+                  type: 'object',
+                  description: 'Component-specific properties',
+                },
+              },
+              required: ['type', 'props'],
+            },
+          },
+        },
+      ];
+
+      // Call OpenAI API with tools
       const completion = await this.openai.chat.completions.create({
         model: this.config.model || 'gpt-3.5-turbo',
         messages: messages.map(m => ({
           role: m.role,
           content: m.content,
         })),
+        tools,
+        tool_choice: 'auto',
         stream: false,
       });
+
+      const choice = completion.choices[0];
+      const uiComponents: any[] = [];
+
+      // Handle tool calls (A2UI components)
+      if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {
+        for (const toolCall of choice.message.tool_calls) {
+          if (toolCall.function.name === 'render_ui_component') {
+            try {
+              const args = JSON.parse(toolCall.function.arguments);
+              const component = {
+                id: uuidv4(),
+                type: args.type,
+                props: args.props,
+              };
+              uiComponents.push(component);
+
+              // Create debug event for UI component rendering
+              debugEvents.push({
+                id: uuidv4(),
+                timestamp: Date.now(),
+                type: 'tool_call',
+                source: 'llm',
+                data: { toolCall: toolCall.function.name, component },
+                description: `LLM rendered ${args.type} component via A2UI`,
+              });
+            } catch (error) {
+              console.error('Error parsing tool call:', error);
+            }
+          }
+        }
+      }
 
       // Create debug event for the response
       debugEvents.push({
@@ -73,15 +133,17 @@ export class LLMService {
         data: { 
           usage: completion.usage,
           model: completion.model,
+          toolCalls: choice.message.tool_calls?.length || 0,
         },
-        description: `LLM responded (${completion.usage?.total_tokens || 0} tokens)`,
+        description: `LLM responded (${completion.usage?.total_tokens || 0} tokens, ${choice.message.tool_calls?.length || 0} UI components)`,
       });
 
       const responseMessage: Message = {
         id: uuidv4(),
         role: 'assistant',
-        content: completion.choices[0].message.content || '',
+        content: choice.message.content || '',
         timestamp: Date.now(),
+        uiComponents: uiComponents.length > 0 ? uiComponents : undefined,
       };
 
       return { message: responseMessage, debugEvents };

@@ -7,6 +7,7 @@ export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: number;
+  uiComponents?: UIComponent[];
 }
 
 export interface Config {
@@ -28,4 +29,27 @@ export interface ChatResponse {
   message: Message;
   conversationId: string;
   debugEvents: DebugEvent[];
+}
+
+/**
+ * A2UI (Agent-to-UI) Protocol Types
+ */
+
+export type UIComponentType = 
+  | 'button'
+  | 'card'
+  | 'list'
+  | 'form'
+  | 'chart'
+  | 'image'
+  | 'table'
+  | 'progress'
+  | 'alert'
+  | 'input';
+
+export interface UIComponent {
+  id: string;
+  type: UIComponentType;
+  props: Record<string, any>;
+  children?: UIComponent[];
 }

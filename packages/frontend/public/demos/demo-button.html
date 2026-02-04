@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+.container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+.header { padding: 20px; border-bottom: 1px solid #e5e7eb; background: white; }
+.header h2 { margin: 0; font-size: 20px; color: #333; }
+.chat-container { display: flex; height: 600px; }
+.debug-panel { width: 40%; background: #1f2937; color: white; padding: 20px; border-right: 1px solid #374151; overflow-y: auto; }
+.chat-panel { flex: 1; display: flex; flex-direction: column; background: white; }
+.messages { flex: 1; padding: 20px; overflow-y: auto; }
+.message { margin-bottom: 16px; display: flex; }
+.message.user { justify-content: flex-end; }
+.message-content { background: #f1f3f5; padding: 12px 16px; border-radius: 12px; max-width: 70%; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+.message.user .message-content { background: #007bff; color: white; }
+.message-role { font-size: 12px; font-weight: 600; margin-bottom: 6px; opacity: 0.8; }
+.message-text { font-size: 15px; line-height: 1.5; color: #333; }
+.message.user .message-text { color: white; }
+.ui-component { margin-top: 12px; }
+.button-demo { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { padding: 8px 16px; font-size: 14px; font-weight: 500; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+.btn-primary { background: #007bff; color: white; }
+.btn-secondary { background: #6c757d; color: white; }
+.btn-danger { background: #dc3545; color: white; }
+.debug-event { background: #374151; border-radius: 6px; padding: 12px; margin-bottom: 8px; font-size: 13px; }
+.event-type { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; text-transform: uppercase; color: white; margin-right: 8px; }
+.event-type.tool { background: #f59e0b; }
+.event-type.response { background: #10b981; }
+.event-type.request { background: #3b82f6; }
+.debug-title { margin: 0 0 16px 0; font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.status { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; margin-left: auto; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h2>🤖 Autobot - A2UI Demo: Button Components</h2>
+  </div>
+  <div class="chat-container">
+    <div class="debug-panel">
+      <h3 class="debug-title">🔍 Debug Events <span class="status"></span></h3>
+      <div class="debug-event">
+        <span class="event-type request">request</span>
+        <span>User message received</span>
+      </div>
+      <div class="debug-event">
+        <span class="event-type request">request</span>
+        <span>Sending request to LLM</span>
+      </div>
+      <div class="debug-event">
+        <span class="event-type tool">tool_call</span>
+        <span>LLM rendered button component via A2UI</span>
+      </div>
+      <div class="debug-event">
+        <span class="event-type response">response</span>
+        <span>LLM responded (245 tokens, 1 UI component)</span>
+      </div>
+    </div>
+    <div class="chat-panel">
+      <div class="messages">
+        <div class="message user">
+          <div class="message-content">
+            <div class="message-role">👤 You</div>
+            <div class="message-text">Show me some button options for my interface</div>
+          </div>
+        </div>
+        <div class="message">
+          <div class="message-content">
+            <div class="message-role">🤖 Assistant</div>
+            <div class="message-text">Here are three different button styles you can use in your interface, each serving a different purpose:</div>
+            <div class="ui-component">
+              <div class="button-demo">
+                <button class="btn btn-primary">Primary Action</button>
+                <button class="btn btn-secondary">Secondary</button>
+                <button class="btn btn-danger">Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

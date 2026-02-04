@@ -1,0 +1,23 @@
+{
+  "name": "autobot",
+  "version": "0.1.0",
+  "description": "A pedagogical fullstack TypeScript demo showcasing LLM chatbot interactions with AG-UI protocol",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "start": "npm run start --workspaces --if-present"
+  },
+  "keywords": [
+    "llm",
+    "chatbot",
+    "ag-ui",
+    "typescript",
+    "pedagogical"
+  ],
+  "author": "",
+  "license": "MIT"
+}

@@ -1,0 +1,200 @@
+import express, { Request, Response } from 'express';
+import cors from 'cors';
+import { v4 as uuidv4 } from 'uuid';
+import { WebSocketServer, WebSocket } from 'ws';
+import http from 'http';
+import { storage } from './storage';
+import { llmService } from './services/llm';
+import { Message, Config, DebugEvent } from './types';
+
+/**
+ * Autobot Backend Server
+ * 
+ * This server implements the AG-UI protocol and provides:
+ * - REST API for configuration and chat
+ * - WebSocket for real-time debug events
+ * - Simple file-based storage
+ * 
+ * The server is designed to be pedagogical and demonstrate
+ * how LLM interactions work in a fullstack application.
+ */
+
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
+
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Store WebSocket connections
+const wsConnections = new Set<WebSocket>();
+
+wss.on('connection', (ws) => {
+  console.log('WebSocket client connected');
+  wsConnections.add(ws);
+
+  ws.on('close', () => {
+    console.log('WebSocket client disconnected');
+    wsConnections.delete(ws);
+  });
+});
+
+/**
+ * Broadcast debug events to all connected WebSocket clients
+ */
+function broadcastDebugEvents(events: DebugEvent[]): void {
+  const message = JSON.stringify({ type: 'debug_events', events });
+  wsConnections.forEach(ws => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(message);
+    }
+  });
+}
+
+// Health check endpoint
+app.get('/api/health', (req: Request, res: Response) => {
+  res.json({ status: 'ok', timestamp: Date.now() });
+});
+
+// Configuration endpoints
+app.post('/api/config', (req: Request, res: Response) => {
+  try {
+    const config: Config = req.body;
+    
+    // Validate config
+    if (!config.apiKey || !config.apiEndpoint) {
+      return res.status(400).json({ error: 'Missing required configuration' });
+    }
+
+    // Save config and configure LLM service
+    storage.saveConfig(config);
+    llmService.configure(config);
+
+    res.json({ success: true, message: 'Configuration saved' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/config', (req: Request, res: Response) => {
+  try {
+    const config = storage.loadConfig();
+    
+    // Don't send API key back to client
+    if (config) {
+      const { apiKey, ...safeConfig } = config;
+      return res.json({ ...safeConfig, configured: true });
+    }
+    
+    res.json({ configured: false });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Chat endpoints
+app.post('/api/chat', async (req: Request, res: Response) => {
+  try {
+    const { message, conversationId } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    if (!llmService.isConfigured()) {
+      return res.status(400).json({ error: 'LLM service not configured' });
+    }
+
+    const convId = conversationId || uuidv4();
+
+    // Load existing conversation
+    const messages = storage.loadConversation(convId);
+
+    // Create debug event for incoming message
+    const incomingDebugEvent: DebugEvent = {
+      id: uuidv4(),
+      timestamp: Date.now(),
+      type: 'request',
+      source: 'frontend',
+      data: { message },
+      description: 'User message received',
+    };
+    broadcastDebugEvents([incomingDebugEvent]);
+
+    // Add new user message
+    const userMessage: Message = {
+      id: uuidv4(),
+      role: 'user',
+      content: message,
+      timestamp: Date.now(),
+    };
+    messages.push(userMessage);
+
+    // Get LLM response
+    const { message: assistantMessage, debugEvents } = await llmService.chat(messages);
+    
+    // Broadcast debug events
+    broadcastDebugEvents(debugEvents);
+
+    // Add assistant message
+    messages.push(assistantMessage);
+
+    // Save conversation
+    storage.saveConversation(convId, messages);
+
+    res.json({
+      message: assistantMessage,
+      conversationId: convId,
+      debugEvents: [incomingDebugEvent, ...debugEvents],
+    });
+  } catch (error: any) {
+    console.error('Chat error:', error);
+    
+    const errorEvent: DebugEvent = {
+      id: uuidv4(),
+      timestamp: Date.now(),
+      type: 'error',
+      source: 'backend',
+      data: { error: error.message },
+      description: `Error: ${error.message}`,
+    };
+    broadcastDebugEvents([errorEvent]);
+
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/conversations/:id', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const messages = storage.loadConversation(id);
+    res.json({ messages });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/conversations', (req: Request, res: Response) => {
+  try {
+    const conversations = storage.listConversations();
+    res.json({ conversations });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Tools endpoint (for demonstration)
+app.get('/api/tools', (req: Request, res: Response) => {
+  const tools = llmService.getAvailableTools();
+  res.json({ tools });
+});
+
+// Start server
+server.listen(PORT, () => {
+  console.log(`🤖 Autobot backend server running on http://localhost:${PORT}`);
+  console.log(`📡 WebSocket server ready for debug events`);
+  console.log(`📚 Visit the frontend to start chatting with your LLM!`);
+});

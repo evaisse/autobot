@@ -14,6 +14,8 @@ export interface Config {
   apiEndpoint: string;
   apiKey: string;
   model?: string;
+  azureApiVersion?: string;
+  azureDeployment?: string;
 }
 
 export interface DebugEvent {
@@ -29,6 +31,22 @@ export interface ChatResponse {
   message: Message;
   conversationId: string;
   debugEvents: DebugEvent[];
+}
+
+export interface CapabilityResult {
+  name: string;
+  status: 'supported' | 'unsupported' | 'error';
+  details?: string;
+}
+
+export interface CapabilitiesResponse {
+  ok: boolean;
+  azure: boolean;
+  results: CapabilityResult[];
+  error?: string;
+  endpoint?: string;
+  deployment?: string;
+  apiVersion?: string;
 }
 
 /**

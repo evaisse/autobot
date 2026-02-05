@@ -3,9 +3,12 @@ import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import { WebSocketServer, WebSocket } from 'ws';
 import http from 'http';
+import path from 'path';
+import fs from 'fs';
+import { spawn } from 'child_process';
 import { storage } from './storage';
 import { llmService } from './services/llm';
-import { Message, Config, DebugEvent } from './types';
+import { Message, Config, DebugEvent, CapabilitiesResponse } from './types';
 
 /**
  * Autobot Backend Server
@@ -51,6 +54,115 @@ function broadcastDebugEvents(events: DebugEvent[]): void {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(message);
     }
+  });
+}
+
+function resolveAzureProbePath(): string | null {
+  const candidates = [
+    path.resolve(process.cwd(), 'scripts', 'azure-capabilities.mjs'),
+    path.resolve(process.cwd(), '..', '..', 'scripts', 'azure-capabilities.mjs'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function looksLikeAzureEndpoint(endpoint: string): boolean {
+  return endpoint.includes('openai.azure.com');
+}
+
+async function runAzureCapabilitiesProbe(config: Config): Promise<CapabilitiesResponse> {
+  const scriptPath = resolveAzureProbePath();
+  if (!scriptPath) {
+    return {
+      ok: false,
+      azure: true,
+      results: [],
+      error: 'Azure probe script not found',
+    };
+  }
+
+  if (!config.azureApiVersion || !config.azureDeployment) {
+    return {
+      ok: false,
+      azure: true,
+      results: [],
+      error: 'Azure API version and deployment are required to run the probe',
+      endpoint: config.apiEndpoint,
+    };
+  }
+
+  return await new Promise((resolve) => {
+    const args = [
+      scriptPath,
+      '--json',
+      '--endpoint',
+      config.apiEndpoint,
+      '--api-version',
+      config.azureApiVersion,
+      '--deployment',
+      config.azureDeployment,
+    ];
+
+    const child = spawn('node', args, {
+      env: {
+        ...process.env,
+        AZURE_OPENAI_API_KEY: config.apiKey,
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    child.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    child.on('close', (code) => {
+      if (code !== 0) {
+        return resolve({
+          ok: false,
+          azure: true,
+          results: [],
+          error: stderr.trim() || `Probe exited with code ${code}`,
+          endpoint: config.apiEndpoint,
+          deployment: config.azureDeployment,
+          apiVersion: config.azureApiVersion,
+        });
+      }
+
+      try {
+        const parsed = JSON.parse(stdout.trim());
+        return resolve({
+          ok: true,
+          azure: true,
+          results: parsed.results || [],
+          endpoint: parsed.endpoint || config.apiEndpoint,
+          deployment: parsed.deployment || config.azureDeployment,
+          apiVersion: parsed.apiVersion || config.azureApiVersion,
+        });
+      } catch (error: any) {
+        return resolve({
+          ok: false,
+          azure: true,
+          results: [],
+          error: `Failed to parse probe output: ${error.message}`,
+          endpoint: config.apiEndpoint,
+          deployment: config.azureDeployment,
+          apiVersion: config.azureApiVersion,
+        });
+      }
+    });
   });
 }
 
@@ -211,6 +323,42 @@ app.get('/api/conversations', (req: Request, res: Response) => {
     res.json({ conversations });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Capabilities endpoint (Azure probe)
+app.post('/api/capabilities', async (req: Request, res: Response) => {
+  try {
+    const config: Config | null = storage.loadConfig();
+
+    if (!config) {
+      return res.status(400).json({
+        ok: false,
+        azure: false,
+        results: [],
+        error: 'Configuration not found',
+      });
+    }
+
+    const isAzure = looksLikeAzureEndpoint(config.apiEndpoint) || Boolean(config.azureApiVersion || config.azureDeployment);
+    if (!isAzure) {
+      return res.json({
+        ok: false,
+        azure: false,
+        results: [],
+        error: 'Capabilities probe is only available for Azure OpenAI endpoints',
+      });
+    }
+
+    const result = await runAzureCapabilitiesProbe(config);
+    return res.json(result);
+  } catch (error: any) {
+    return res.status(500).json({
+      ok: false,
+      azure: false,
+      results: [],
+      error: error.message || 'Failed to run capabilities probe',
+    });
   }
 });
 

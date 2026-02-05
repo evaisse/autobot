@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { ConfigForm } from './components/ConfigForm';
 import { DebugPanel } from './components/DebugPanel';
 import { ChatPanel } from './components/ChatPanel';
+import { CapabilitiesPanel } from './components/CapabilitiesPanel';
 import { useDebugEvents } from './hooks/useDebugEvents';
-import { Message, Config, ChatResponse } from './types';
+import { Message, Config, ChatResponse, CapabilitiesResponse } from './types';
 
 /**
  * Main Application Component
@@ -17,6 +18,9 @@ function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [capabilities, setCapabilities] = useState<CapabilitiesResponse | null>(null);
+  const [capabilitiesLoading, setCapabilitiesLoading] = useState(false);
+  const [capabilitiesError, setCapabilitiesError] = useState('');
   
   const { debugEvents, connected, clearEvents } = useDebugEvents();
 
@@ -87,6 +91,33 @@ function App() {
     }
   };
 
+  const handleRunCapabilities = async () => {
+    setCapabilitiesLoading(true);
+    setCapabilitiesError('');
+
+    try {
+      const response = await fetch('/api/capabilities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data: CapabilitiesResponse = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to run capabilities probe');
+      }
+
+      if (data.ok === false && data.error) {
+        setCapabilitiesError(data.error);
+      }
+
+      setCapabilities(data);
+    } catch (error: any) {
+      setCapabilitiesError(error.message || 'Failed to run capabilities probe');
+    } finally {
+      setCapabilitiesLoading(false);
+    }
+  };
+
   if (!configured) {
     return <ConfigForm onSave={handleSaveConfig} />;
   }
@@ -95,11 +126,19 @@ function App() {
     <div style={styles.container}>
       {/* Left panel: Debug events */}
       <div style={styles.leftPanel}>
-        <DebugPanel
-          events={debugEvents}
-          connected={connected}
-          onClear={clearEvents}
+        <CapabilitiesPanel
+          data={capabilities}
+          loading={capabilitiesLoading}
+          error={capabilitiesError}
+          onRun={handleRunCapabilities}
         />
+        <div style={styles.debugPanelContainer}>
+          <DebugPanel
+            events={debugEvents}
+            connected={connected}
+            onClear={clearEvents}
+          />
+        </div>
       </div>
 
       {/* Right panel: Chat interface */}
@@ -124,10 +163,16 @@ const styles = {
     width: '40%',
     minWidth: '400px',
     borderRight: '1px solid #e5e7eb',
+    display: 'flex',
+    flexDirection: 'column' as const,
   },
   rightPanel: {
     flex: 1,
     minWidth: '400px',
+  },
+  debugPanelContainer: {
+    flex: 1,
+    minHeight: 0,
   },
 };
 

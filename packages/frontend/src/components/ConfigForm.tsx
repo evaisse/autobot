@@ -15,6 +15,8 @@ export function ConfigForm({ onSave }: ConfigFormProps) {
   const [apiEndpoint, setApiEndpoint] = useState('https://api.openai.com/v1');
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState('gpt-3.5-turbo');
+  const [azureApiVersion, setAzureApiVersion] = useState('');
+  const [azureDeployment, setAzureDeployment] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -24,7 +26,13 @@ export function ConfigForm({ onSave }: ConfigFormProps) {
     setLoading(true);
 
     try {
-      await onSave({ apiEndpoint, apiKey, model });
+      await onSave({
+        apiEndpoint,
+        apiKey,
+        model,
+        azureApiVersion: azureApiVersion || undefined,
+        azureDeployment: azureDeployment || undefined,
+      });
     } catch (err: any) {
       setError(err.message || 'Failed to save configuration');
     } finally {
@@ -76,6 +84,31 @@ export function ConfigForm({ onSave }: ConfigFormProps) {
             />
           </div>
 
+          <div style={styles.azureSection}>
+            <div style={styles.azureHeader}>Azure OpenAI (optional)</div>
+            <div style={styles.field}>
+              <label style={styles.label}>API Version</label>
+              <input
+                type="text"
+                value={azureApiVersion}
+                onChange={(e) => setAzureApiVersion(e.target.value)}
+                style={styles.input}
+                placeholder="2024-02-15-preview"
+              />
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Deployment Name</label>
+              <input
+                type="text"
+                value={azureDeployment}
+                onChange={(e) => setAzureDeployment(e.target.value)}
+                style={styles.input}
+                placeholder="my-deployment"
+              />
+            </div>
+          </div>
+
           {error && <div style={styles.error}>{error}</div>}
 
           <button type="submit" disabled={loading} style={styles.button}>
@@ -122,6 +155,22 @@ const styles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '20px',
+  },
+  azureSection: {
+    border: '1px dashed #e5e7eb',
+    borderRadius: '6px',
+    padding: '12px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '16px',
+    backgroundColor: '#f9fafb',
+  },
+  azureHeader: {
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#374151',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.04em',
   },
   field: {
     display: 'flex',

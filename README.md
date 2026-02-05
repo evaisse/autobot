@@ -89,6 +89,24 @@ This will start:
 
 6. Start chatting and watch the debug panel to see everything that happens!
 
+## 🔍 Azure OpenAI Capability Probe (Optional)
+
+If you're targeting Azure OpenAI endpoints, you can run a small probe script to see which features your deployment supports (tool calling, streaming, vision, and reasoning parameters). It sends a handful of minimal test requests and prints a simple PASS/FAIL table.
+
+```bash
+export AZURE_OPENAI_API_ENDPOINT="https://YOUR-RESOURCE.openai.azure.com"
+export AZURE_OPENAI_API_KEY="YOUR_KEY"
+export AZURE_OPENAI_API_VERSION="YOUR_API_VERSION"
+export AZURE_OPENAI_DEPLOYMENT_NAME="YOUR_DEPLOYMENT"
+
+npm run azure:capabilities
+```
+
+Optional extras:
+- `AZURE_OPENAI_TEST_IMAGE_URL` to probe vision with a real image URL
+- `AZURE_OPENAI_REASONING_PARAMS` to override which reasoning params to try
+- CLI overrides: `--endpoint`, `--api-version`, `--deployment`
+
 ## 📁 Project Structure
 
 ```

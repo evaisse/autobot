@@ -1,0 +1,164 @@
+openapi: 3.0.0
+info:
+  title: OpenRouter Pedagogical API
+  description: Documentation des endpoints OpenRouter utilisés dans le projet Autobot pour démontrer les capacités multi-modales.
+  version: 1.0.0
+servers:
+  - url: https://openrouter.ai/api/v1
+    description: Serveur API OpenRouter
+
+paths:
+  /chat/completions:
+    post:
+      summary: Créer une complétion de chat
+      description: Envoie une séquence de messages et reçoit une réponse générée par le modèle choisi.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: Bearer sk-or-v1-...
+        - in: header
+          name: HTTP-Referer
+          schema:
+            type: string
+            example: http://localhost:3000
+        - in: header
+          name: X-Title
+          schema:
+            type: string
+            example: Autobot Demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                model:
+                  type: string
+                  description: L'ID du modèle à utiliser.
+                  example: google/gemini-2.0-flash-001
+                messages:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      role:
+                        type: string
+                        enum: [user, assistant, system, tool]
+                      content:
+                        type: string
+                temperature:
+                  type: number
+                  minimum: 0
+                  maximum: 2
+                include_reasoning:
+                  type: boolean
+                  description: Si vrai, inclut les tokens de raisonnement dans la réponse.
+                web_search:
+                  type: boolean
+                  description: Active la recherche web si supportée.
+                tools:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Tool'
+                tool_choice:
+                  type: string
+                  example: auto
+      responses:
+        '200':
+          description: Succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatCompletion'
+
+  /models:
+    get:
+      summary: Lister les modèles disponibles
+      description: Récupère la liste de tous les modèles supportés par OpenRouter avec leurs modalités et prix.
+      responses:
+        '200':
+          description: Succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Model'
+
+components:
+  schemas:
+    Tool:
+      type: object
+      properties:
+        type:
+          type: string
+          example: function
+        function:
+          type: object
+          properties:
+            name:
+              type: string
+            description:
+              type: string
+            parameters:
+              type: object
+
+    ChatCompletion:
+      type: object
+      properties:
+        id:
+          type: string
+        choices:
+          type: array
+          items:
+            type: object
+            properties:
+              message:
+                type: object
+                properties:
+                  role:
+                    type: string
+                  content:
+                    type: string
+                  reasoning:
+                    type: string
+                    description: Tokens de raisonnement (OpenRouter specific)
+                  tool_calls:
+                    type: array
+                    items:
+                      type: object
+        usage:
+          type: object
+          properties:
+            prompt_tokens:
+              type: integer
+            completion_tokens:
+              type: integer
+            total_tokens:
+              type: integer
+
+    Model:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        context_length:
+          type: integer
+        pricing:
+          type: object
+          properties:
+            prompt:
+              type: string
+            completion:
+              type: string

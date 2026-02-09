@@ -73,8 +73,27 @@ export function ChatPanel({ messages, onSendMessage, loading }: ChatPanelProps) 
                 <div style={styles.messageRole}>
                   {message.role === 'user' ? '👤 You' : '🤖 Assistant'}
                 </div>
+
+                {message.reasoning && (
+                  <details style={styles.reasoning}>
+                    <summary style={styles.reasoningSummary}>Raisonnement (Thought)</summary>
+                    <div style={styles.reasoningContent}>{message.reasoning}</div>
+                  </details>
+                )}
+
                 <div style={styles.messageText}>{message.content}</div>
                 
+                {/* Indicateur d'exécution des outils */}
+                {message.uiComponents && message.uiComponents.length > 0 && (
+                  <div style={styles.toolsBadgeContainer}>
+                    {message.uiComponents.map(comp => (
+                      <span key={comp.id} style={styles.toolBadge}>
+                        ⚙️ Outil exécuté : {comp.type}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 {/* Render A2UI components if present */}
                 {message.uiComponents && message.uiComponents.length > 0 && (
                   <div style={styles.uiComponentsContainer}>
@@ -84,8 +103,16 @@ export function ChatPanel({ messages, onSendMessage, loading }: ChatPanelProps) 
                   </div>
                 )}
                 
-                <div style={styles.messageTime}>
-                  {new Date(message.timestamp).toLocaleTimeString()}
+                <div style={styles.messageFooter}>
+                  <div style={styles.messageTime}>
+                    {new Date(message.timestamp).toLocaleTimeString()}
+                  </div>
+                  {message.usage && (
+                    <div style={styles.usage}>
+                      {message.usage.totalTokens} tokens • 
+                      {message.usage.cost ? ` $${message.usage.cost.toFixed(4)}` : ' (calcul coût...)'}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -207,10 +234,54 @@ const styles = {
     lineHeight: '1.5',
     whiteSpace: 'pre-wrap' as const,
   },
-  messageTime: {
+  messageFooter: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: '8px',
     fontSize: '11px',
-    marginTop: '6px',
     opacity: 0.6,
+  },
+  messageTime: {
+    margin: 0,
+  },
+  usage: {
+    fontFamily: 'monospace',
+  },
+  toolsBadgeContainer: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: '6px',
+    marginTop: '8px',
+  },
+  toolBadge: {
+    fontSize: '10px',
+    backgroundColor: '#e0e7ff',
+    color: '#4338ca',
+    padding: '2px 8px',
+    borderRadius: '9999px',
+    fontWeight: '600',
+    border: '1px solid #c7d2fe',
+  },
+  reasoning: {
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderRadius: '6px',
+    padding: '8px',
+    marginBottom: '10px',
+    fontSize: '13px',
+  },
+  reasoningSummary: {
+    cursor: 'pointer',
+    fontWeight: '600',
+    color: '#666',
+    outline: 'none',
+  },
+  reasoningContent: {
+    marginTop: '8px',
+    fontStyle: 'italic',
+    color: '#555',
+    borderLeft: '2px solid #ddd',
+    paddingLeft: '10px',
   },
   uiComponentsContainer: {
     marginTop: '12px',

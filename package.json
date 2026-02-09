@@ -4,21 +4,21 @@
   "description": "A pedagogical fullstack TypeScript demo showcasing LLM chatbot interactions with AG-UI protocol",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/frontend"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces --if-present",
-    "test:server": "npm run dev --workspaces --if-present",
-    "build": "npm run build --workspaces --if-present",
-    "start": "npm run start --workspaces --if-present",
-    "azure:capabilities": "node scripts/azure-capabilities.mjs"
+    "dev": "npm run dev -w @autobot/frontend",
+    "test": "npm run test -w @autobot/frontend",
+    "build": "npm run build -w @autobot/frontend",
+    "start": "npm run preview -w @autobot/frontend"
   },
   "keywords": [
     "llm",
     "chatbot",
     "ag-ui",
     "typescript",
-    "pedagogical"
+    "pedagogical",
+    "openrouter"
   ],
   "author": "",
   "license": "MIT"
